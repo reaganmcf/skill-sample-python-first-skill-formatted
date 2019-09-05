@@ -14,7 +14,7 @@ from ask_sdk_core.dispatch_components import (
 )
 from ask_sdk_core.utils import is_request_type, is_intent_name
 
-sb = StandardSkillBuilder()
+sb = StandardSkillBuilder(table_name="cake-walk-example", auto_create_table=True)
 
 logger = logging.getLogger("main")
 logger.setLevel(logging.INFO)
@@ -33,6 +33,32 @@ class LaunchRequestIntentHandler(AbstractRequestHandler):
         return handler_input.response_builder.response
 
 
+class HasBirthdayLaunchRequestHandler(AbstractRequestHandler):
+    """
+    Handler for launch after they have set their birthday
+    """
+    def can_handle(self, handler_input):
+        # extract persistent attributes and check if they are all present
+        attr = handler_input.attributes_manager.persistent_attributes
+        attributes_are_present = ("year" in attr and "month" in attr and "day" in attr)
+
+        return attributes_are_present and is_request_type("LaunchRequest")(handler_input)
+
+    def handle(self, handler_input):
+        attr = handler_input.attributes_manager.persistent_attributes
+
+        year = attr['year']
+        month = attr['month'] # month is a string, and we need to convert it to a month index later
+        day = attr['day']
+
+        # TODO:: Use the settings API to get current date and then compute how many days until user's bday
+        # TODO:: Say happy birthday on the user's birthday 
+
+        speak_output = "Welcome back it looks like there are X more days until your y-th birthday."
+        handler_input.response_builder.speak(speak_output)
+        return handler_input.response_builder.response
+
+
 class CaptureBirthdayIntentHandler(AbstractRequestHandler):
     """
     Handler for the CaptureBirthday Intent
@@ -46,6 +72,16 @@ class CaptureBirthdayIntentHandler(AbstractRequestHandler):
         year = slots["year"].value
         month = slots["month"].value
         day = slots["day"].value
+
+        # save slots into session attributes
+        session_attr = handler_input.attributes_manager.session_attributes
+        session_attr['year'] = year
+        session_attr['month'] = month
+        session_attr['day'] = day
+
+        # save session attributes as persistent attributes
+        handler_input.attributes_manager.persistent_attributes = session_attr
+        handler_input.attributes_manager.save_persistent_attributes()
 
         speak_output = 'Thanks, I will remember that you were born {month} {day} {year}.'.format(month=month, day=day, year=year)
         handler_input.response_builder.speak(speak_output)
@@ -109,6 +145,7 @@ class CatchAllExceptionHandler(AbstractExceptionHandler):
         return handler_input.response_builder.response
 
 # register request / intent handlers
+sb.add_request_handler(HasBirthdayLaunchRequestHandler())
 sb.add_request_handler(LaunchRequestIntentHandler())
 sb.add_request_handler(HelpIntentHandler())
 sb.add_request_handler(CaptureBirthdayIntentHandler())
