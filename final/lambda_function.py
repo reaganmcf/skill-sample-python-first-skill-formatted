@@ -19,7 +19,7 @@ from ask_sdk_core.dispatch_components import (
 )
 from ask_sdk_core.utils import is_request_type, is_intent_name
 
-s3_adapter = S3Adapter(bucket_name="S3-BUCKET-NAME")
+s3_adapter = S3Adapter(bucket_name="custom-walk-testing")
 sb = CustomSkillBuilder(persistence_adapter=s3_adapter)
 
 logger = logging.getLogger("main")
@@ -95,7 +95,7 @@ class HasBirthdayLaunchRequestHandler(AbstractRequestHandler):
         # check if we need to adjust bday by one year
         if now_date > next_birthday:    
             next_birthday = datetime(
-                year + 1,
+                current_year + 1,
                 month_as_index,
                 day
             )
@@ -177,6 +177,7 @@ class CatchAllExceptionHandler(AbstractExceptionHandler):
         speak_output = "Sorry, I couldn't understand what you said. Please try again."
         handler_input.response_builder.speak(speak_output).ask(speak_output)
         return handler_input.response_builder.response
+
 
 class CancelAndStopIntentHandler(AbstractRequestHandler):
     """
